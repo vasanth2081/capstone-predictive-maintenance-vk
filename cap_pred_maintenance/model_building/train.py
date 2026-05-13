@@ -59,9 +59,9 @@ xgb_model = xgb.XGBClassifier(scale_pos_weight=class_weight, random_state=42, n_
 param_grid = {
     'xgbclassifier__n_estimators': [50, 100],
     'xgbclassifier__max_depth': [3, 4],
-    'xgbclassifier__learning_rate': [0.05, 0.1],
-    'xgbclassifier__subsample': [0.8, 1.0],
-    'xgbclassifier__colsample_bytree': [0.8, 1.0]    
+    'xgbclassifier__learning_rate': [0.05, 0.1]#,
+    #'xgbclassifier__subsample': [0.8, 1.0],
+    #'xgbclassifier__colsample_bytree': [0.8, 1.0]    
 }
 
 # Model pipeline
