@@ -38,3 +38,12 @@ if st.button("Predict Engine Failure"):
     result = "Engine Faulty" if prediction == 1 else "Engine Not Faulty"
     st.subheader("Prediction Result:")
     st.success(f"The model predicts: **{result}**")
+
+st.write("Input Data")
+st.write(input_df)
+
+st.write("Data Types")
+st.write(input_df.dtypes)
+
+st.write("Prediction")
+st.write(prediction)
