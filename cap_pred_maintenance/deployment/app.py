@@ -34,7 +34,9 @@ input_data = pd.DataFrame([{
 
 
 if st.button("Predict Engine Failure"):
-    prediction = model.predict(input_data)[0]
+    # prediction = model.predict(input_data)[0]
+    prob = model.predict_proba(input_data)[0][1]
+    prediction = 1 if prob >= 0.4 else 0
     result = "Engine Faulty" if prediction == 1 else "Engine Not Faulty"
     st.subheader("Prediction Result:")
     st.success(f"The model predicts: **{result}**")
