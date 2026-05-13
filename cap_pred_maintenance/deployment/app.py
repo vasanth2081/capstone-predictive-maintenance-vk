@@ -41,10 +41,10 @@ if st.button("Predict Engine Failure"):
 
 
 st.write("Input Data")
-st.write(input_df)
+st.write(input_data)
 
 st.write("Data Types")
-st.write(input_df.dtypes)
+st.write(input_data.dtypes)
 
 st.write("Prediction")
 st.write(prediction)
