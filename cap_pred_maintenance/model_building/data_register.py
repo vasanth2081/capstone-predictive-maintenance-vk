@@ -2,7 +2,7 @@ from huggingface_hub.utils import RepositoryNotFoundError, HfHubHTTPError
 from huggingface_hub import HfApi, create_repo
 import os
 
-repo_id = "v-vasanth2009/capstone-predictive-maintenance-vk"
+repo_id = "v-vasanth2009/capstone-pred-main-vk-12052026"
 repo_type = "dataset"
 
 # Initialize API client
