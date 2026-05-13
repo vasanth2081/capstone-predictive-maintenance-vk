@@ -39,6 +39,7 @@ if st.button("Predict Engine Failure"):
     st.subheader("Prediction Result:")
     st.success(f"The model predicts: **{result}**")
 
+
 st.write("Input Data")
 st.write(input_df)
 
