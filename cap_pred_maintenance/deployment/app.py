@@ -15,12 +15,12 @@ Please enter the Customer and interaction data below to get a prediction.
 """)
 
 # User input
-Engine_rpm = st.number_input("Engine rpm", min_value=0, max_value=6000, value=1)
-Lub_oil_pressure = st.number_input("Lub oil pressure", min_value=0, max_value=100, value=1)
-Fuel_pressure = st.number_input("Fuel pressure", min_value=0, max_value=1000, value=1)
-Coolant_pressure = st.number_input("Coolant pressure", min_value=0, max_value=1000, value=1)
-lub_oil_temp = st.number_input("lub oil temp", min_value=0, max_value=1000, value=1)
-Coolant_temp = st.number_input("Coolant temp", min_value=0, max_value=1000, value=1)
+Engine_rpm = st.number_input("Engine rpm", min_value=0, max_value=6000, value=1, step=1)
+Lub_oil_pressure = st.number_input("Lub oil pressure", min_value=0.0, format="%.9f")
+Fuel_pressure = st.number_input("Fuel pressure",  min_value=0.0, format="%.9f")
+Coolant_pressure = st.number_input("Coolant pressure",  min_value=0.0, format="%.9f")
+lub_oil_temp = st.number_input("lub oil temp",  min_value=0.0, format="%.9f")
+Coolant_temp = st.number_input("Coolant temp",  min_value=0.0, format="%.9f")
 
 # Assemble input into DataFrame
 input_data = pd.DataFrame([{
