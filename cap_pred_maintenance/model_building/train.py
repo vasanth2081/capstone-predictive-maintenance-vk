@@ -56,14 +56,14 @@ preprocessor = make_column_transformer(
 xgb_model = xgb.XGBClassifier(scale_pos_weight=class_weight, random_state=42, n_jobs=-1, tree_method="hist")
 
 # Define hyperparameter grid
-'''
 param_grid = {
     'xgbclassifier__n_estimators': [50, 100],
     'xgbclassifier__max_depth': [3, 4],
-    'xgbclassifier__learning_rate': [0.05, 0.1]#,
-    #'xgbclassifier__subsample': [0.8, 1.0],
-    #'xgbclassifier__colsample_bytree': [0.8, 1.0]    
-}'''
+    'xgbclassifier__learning_rate': [0.05, 0.1],
+    'xgbclassifier__subsample': [0.8, 1.0],
+    'xgbclassifier__colsample_bytree': [0.8, 1.0]    
+}
+'''
 param_grid = {
     'xgbclassifier__n_estimators': [100, 200],
     'xgbclassifier__max_depth': [3, 5],
@@ -71,7 +71,7 @@ param_grid = {
     'xgbclassifier__subsample': [0.8],
     'xgbclassifier__colsample_bytree': [0.8],
     'xgbclassifier__scale_pos_weight': [3, 5, 7]
-}
+}'''
 
 # Model pipeline
 model_pipeline = make_pipeline(preprocessor, xgb_model)
