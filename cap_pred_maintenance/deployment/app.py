@@ -32,6 +32,48 @@ input_data = pd.DataFrame([{
     'Coolant temp': Coolant_temp
 }])
 
+def feature_engineering(input_data):
+
+    df = input_data.copy()
+
+    df['temp_diff'] = (
+        df['lub oil temp'] -
+        df['Coolant temp']
+    )
+
+    df['engine_stress'] = (
+        df['Engine rpm'] *
+        df['Coolant temp']
+    )
+
+    df['heat_index'] = (
+        df['lub oil temp'] +
+        df['Coolant temp']
+    ) / 2
+
+    df['pressure_ratio'] = (
+        df['Fuel pressure'] /
+        (df['Lub oil pressure'] + 1e-5)
+    )
+
+    df['pressure_stability'] = (
+        df['Lub oil pressure'] +
+        df['Coolant pressure']
+    )
+
+    df['thermal_stress'] = (
+        df['Engine rpm'] *
+        df['lub oil temp']
+    )
+
+    df['rpm_pressure_ratio'] = (
+        df['Engine rpm'] /
+        (df['Lub oil pressure'] + 1e-5)
+    )
+
+    return df
+
+input_data = feature_engineering(input_data)
 
 if st.button("Predict Engine Failure"):
     # prediction = model.predict(input_data)[0]

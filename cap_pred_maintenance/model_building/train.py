@@ -31,8 +31,12 @@ Xtest = pd.read_csv(Xtest_path)
 ytrain = pd.read_csv(ytrain_path)
 ytest = pd.read_csv(ytest_path)
 
+ytrain = ytrain.squeeze()
+ytest = ytest.squeeze()
+
 # One-hot encode 'Type' and scale numeric features
-numeric_features = [
+numeric_features = Xtrain.columns.tolist()
+'''numeric_features = [
     'Engine rpm',
     'Lub oil pressure',
     'Fuel pressure',
@@ -40,17 +44,23 @@ numeric_features = [
     'lub oil temp',
     'Coolant temp'
 ]
-categorical_features = []
+categorical_features = []'''
 
 # Set the clas weight to handle class imbalance
 class_weight = ytrain.value_counts()[0] / ytrain.value_counts()[1]
 class_weight
 
 # Define the preprocessing steps
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', StandardScaler(), numeric_features)
+    ]
+)
+'''
 preprocessor = make_column_transformer(
     (StandardScaler(), numeric_features),
     (OneHotEncoder(handle_unknown='ignore'), categorical_features)
-)
+)'''
 
 # Define base XGBoost model
 xgb_model = xgb.XGBClassifier(scale_pos_weight=class_weight, random_state=42, n_jobs=-1, tree_method="hist")
@@ -73,13 +83,19 @@ param_grid = {
     'xgbclassifier__scale_pos_weight': [3, 5, 7]
 }'''
 
+strcv = StratifiedKFold(
+    n_splits=5,
+    shuffle=True,
+    random_state=42
+)
+
 # Model pipeline
 model_pipeline = make_pipeline(preprocessor, xgb_model)
 
 # Start MLflow run
 with mlflow.start_run():
     # Hyperparameter tuning
-    grid_search = GridSearchCV(model_pipeline, param_grid, cv=3, n_jobs=-1)
+    grid_search = GridSearchCV(model_pipeline, param_grid, cv=strcv, n_jobs=-1, scoring='recall')
     grid_search.fit(Xtrain, ytrain)
 
     # Log all parameter combinations and their mean test scores
