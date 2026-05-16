@@ -61,7 +61,7 @@ param_grid = {
     'xgbclassifier__max_depth': [3, 4],
     'xgbclassifier__learning_rate': [0.05, 0.1],
     'xgbclassifier__subsample': [0.8, 1.0],
-    'xgbclassifier__colsample_bytree': [0.8, 1.0]    
+    'xgbclassifier__colsample_bytree': [0.8, 1.0]
 }
 '''
 param_grid = {
