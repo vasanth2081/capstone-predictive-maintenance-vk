@@ -45,7 +45,7 @@ def feature_engineering(df):
     )
 
     df['pressure_stability'] = (
-        df['lub oil pressure'] +
+        df['Lub oil pressure'] +
         df['Coolant pressure']
     )
 
@@ -56,7 +56,7 @@ def feature_engineering(df):
 
     df['rpm_pressure_ratio'] = (
         df['Engine rpm'] /
-        (df['lub oil pressure'] + 1e-5)
+        (df['Lub oil pressure'] + 1e-5)
     )
 
     return df
