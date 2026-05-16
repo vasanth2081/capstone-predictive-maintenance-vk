@@ -25,7 +25,7 @@ def feature_engineering(df):
     df = df.copy()
 
     df['temp_diff'] = (
-        df['Lub oil temp'] -
+        df['lub oil temp'] -
         df['Coolant temp']
     )
 
@@ -35,7 +35,7 @@ def feature_engineering(df):
     )
 
     df['heat_index'] = (
-        df['Lub oil temp'] +
+        df['lub oil temp'] +
         df['Coolant temp']
     ) / 2
 
@@ -70,7 +70,7 @@ for col in numerical_cols:
     upper = Q3 + 1.5 * IQR
 
     X[col] = X[col].clip(lower, upper)
-    
+
 # Perform train-test split
 Xtrain, Xtest, ytrain, ytest = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
