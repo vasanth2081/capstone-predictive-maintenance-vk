@@ -74,7 +74,7 @@ Xtrain, Xtest, ytrain, ytest = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-# Outlier Handling 
+# Outlier Handling
 numerical_cols = Xtrain.select_dtypes(
     include=['int64', 'float64']
 ).columns
