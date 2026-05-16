@@ -8,7 +8,7 @@ from sklearn.pipeline import make_pipeline
 # for model training, tuning, and evaluation
 import xgboost as xgb
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import accuracy_score, classification_report, recall_score
+from sklearn.metrics import accuracy_score, classification_report, recall_score, confusion_matrix, f1_score, precision_recall_curve, roc_auc_score
 
 from sklearn.ensemble import (
     RandomForestClassifier,
