@@ -7,14 +7,61 @@ import joblib
 model_path = hf_hub_download(repo_id="v-vasanth2009/capstone-pred-main-vk-12052026", filename="best_cap_prediction_model_v1.joblib")
 model = joblib.load(model_path)
 
+# FEATURE ENGINEERING
+def feature_engineering(df):
+
+    df = df.copy()
+
+    df['thermal_stress'] = (
+        df['Engine rpm'] *
+        df['lub oil temp']
+    )
+
+    df['engine_stress'] = (
+        df['Engine rpm'] *
+        df['Coolant temp']
+    )
+
+    df['pressure_ratio'] = (
+        df['Fuel pressure'] /
+        (df['Lub oil pressure'] + 1e-5)
+    )
+
+    df['rpm_temp_ratio'] = (
+        df['Engine rpm'] /
+        (df['Coolant temp'] + 1e-5)
+    )
+
+    df['pressure_mean'] = (
+        df[
+            [
+                'Fuel pressure',
+                'Lub oil pressure',
+                'Coolant pressure'
+            ]
+        ].mean(axis=1)
+    )
+
+    return df
+
 # Streamlit UI for Tourism Package Purchase Prediction
 st.title("Predictive Maintenance App")
 st.write("""
-This application predicts the likelihood of a Customer purchasing Wellness Tourism package based on customer and interaction data.
-Please enter the Customer and interaction data below to get a prediction.
+This application predicts whether an engine is:
+
+- Healthy
+OR
+- Faulty
+
+based on operational sensor readings.
+
+The model uses an optimized ensemble learning pipeline
+with engineered predictive maintenance features.
 """)
 
 # User input
+st.subheader("Enter Engine Parameters")
+
 Engine_rpm = st.number_input("Engine rpm", min_value=0, max_value=6000, value=1, step=1)
 Lub_oil_pressure = st.number_input("Lub oil pressure", min_value=0.0, format="%.9f")
 Fuel_pressure = st.number_input("Fuel pressure",  min_value=0.0, format="%.9f")
@@ -32,83 +79,69 @@ input_data = pd.DataFrame([{
     'Coolant temp': Coolant_temp
 }])
 
-def feature_engineering(input_data):
-
-    df = input_data.copy()
-
-    df['temp_diff'] = (
-        df['lub oil temp'] -
-        df['Coolant temp']
-    )
-
-    df['engine_stress'] = (
-        df['Engine rpm'] *
-        df['Coolant temp']
-    )
-
-    df['heat_index'] = (
-        df['lub oil temp'] +
-        df['Coolant temp']
-    ) / 2
-
-    df['pressure_ratio'] = (
-        df['Fuel pressure'] /
-        (df['Lub oil pressure'] + 1e-5)
-    )
-
-    df['temp_pressure_interaction'] = (
-        df['Coolant temp'] /
-        (df['Coolant pressure'] + 1e-5)
-    )
-
-    df['lub_efficiency'] = (
-        df['Lub oil pressure'] /
-        (df['Engine rpm'] + 1e-5)
-    )
-
-    df['fuel_stress'] = (
-        df['Fuel pressure'] *
-        df['Engine rpm']
-    )
-
-    df['thermal_gradient'] = (
-        abs(df['lub oil temp'] - df['Coolant temp'])
-    )
-
-    df['pressure_efficiency'] = (
-        df['Fuel pressure'] /
-        (df['Coolant pressure'] + 1e-5)
-    )
-
-    df['thermal_load_ratio'] = (
-        df['Coolant temp'] /
-        (df['lub oil temp'] + 1e-5)
-    )
-
-    df['rpm_temp_ratio'] = (
-        df['Engine rpm'] /
-        (df['Coolant temp'] + 1e-5)
-    )
-
-    df['oil_cooling_efficiency'] = (
-        df['Lub oil pressure'] /
-        (df['lub oil temp'] + 1e-5)
-    )
-
-    return df
-
+# FEATURE ENGINEERING
 input_data = feature_engineering(input_data)
 
-if st.button("Predict Engine Failure"):
-    # prediction = model.predict(input_data)[0]
+# REMOVE WEAK FEATURES
+drop_features = ['Coolant temp']
+
+input_data.drop(
+    columns=drop_features,
+    inplace=True
+)
+
+if st.button("Predict Engine Condition"):
+
+    # Predict probability
     prob = model.predict_proba(input_data)[0][1]
-    prediction = 1 if prob >= 0.6 else 0
-    result = "Engine Faulty" if prediction == 1 else "Engine Not Faulty"
+
+    # Optimized threshold
+    threshold = 0.48
+
+    prediction = (
+
+        1 if prob >= threshold
+
+        else 0
+    )
+
     st.subheader("Prediction Result:")
-    st.success(f"The model predicts: **{result}**")
+    if prediction == 1:
+        st.error("⚠️ Engine Faulty")
+    else:
+        st.success("✅ Engine Healthy")
 
+    # PROBABILITY DISPLAY
+    st.subheader("Prediction Confidence")
 
-st.write("Input Data")
+    st.write(
+
+        f"Fault Probability: "
+        f"{prob:.2%}"
+    )
+
+    st.progress(float(prob))
+
+    # RISK INTERPRETATION
+    if prob >= 0.75:
+
+        st.warning(
+            "High failure risk detected."
+        )
+
+    elif prob >= 0.48:
+
+        st.info(
+            "Moderate failure risk detected."
+        )
+
+    else:
+
+        st.success(
+            "Engine operating normally."
+        )
+
+with st.expander("View Input Data"):
 st.write(input_data)
 
 st.write("Data Types")

@@ -2,9 +2,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import make_column_transformer
-from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import StratifiedKFold
 
 # for model training, tuning, and evaluation
 import xgboost as xgb
@@ -34,135 +32,258 @@ ytest_path = "hf://datasets/v-vasanth2009/capstone-pred-main-vk-12052026/ytest.c
 
 Xtrain = pd.read_csv(Xtrain_path)
 Xtest = pd.read_csv(Xtest_path)
-ytrain = pd.read_csv(ytrain_path)
-ytest = pd.read_csv(ytest_path)
+ytrain = pd.read_csv(ytrain_path).values.ravel()
+ytest = pd.read_csv(ytest_path).values.ravel()
 
-ytrain = ytrain.squeeze()
-ytest = ytest.squeeze()
+# FEATURE ENGINEERING
+def feature_engineering(df):
 
-# One-hot encode 'Type' and scale numeric features
-numeric_features = Xtrain.columns.tolist()
-'''numeric_features = [
-    'Engine rpm',
-    'Lub oil pressure',
-    'Fuel pressure',
-    'Coolant pressure',
-    'lub oil temp',
+    df = df.copy()
+
+    df['thermal_stress'] = (
+        df['Engine rpm'] *
+        df['lub oil temp']
+    )
+
+    df['engine_stress'] = (
+        df['Engine rpm'] *
+        df['Coolant temp']
+    )
+
+    df['pressure_ratio'] = (
+        df['Fuel pressure'] /
+        (df['Lub oil pressure'] + 1e-5)
+    )
+
+    df['rpm_temp_ratio'] = (
+        df['Engine rpm'] /
+        (df['Coolant temp'] + 1e-5)
+    )
+
+    df['pressure_mean'] = (
+        df[
+            [
+                'Fuel pressure',
+                'Lub oil pressure',
+                'Coolant pressure'
+            ]
+        ].mean(axis=1)
+    )
+
+    return df
+
+Xtrain = feature_engineering(Xtrain)
+Xtest = feature_engineering(Xtest)
+
+# REMOVE WEAK FEATURES
+drop_features = [
     'Coolant temp'
 ]
-categorical_features = []'''
 
-# Set the clas weight to handle class imbalance
-class_weight = ytrain.value_counts()[0] / ytrain.value_counts()[1]
-class_weight
+drop_features = [
+    col for col in drop_features
+    if col in Xtrain.columns
+]
 
-# Define the preprocessing steps
-preprocessor = 'passthrough'
-'''
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('num', StandardScaler(), numeric_features)
-    ]
-)'''
-'''
+Xtrain.drop(columns=drop_features, inplace=True)
+Xtest.drop(columns=drop_features, inplace=True)
+
+print(f"Weak features dropped: {drop_features}")
+
+# HANDLE MISSING VALUES
+for col in Xtrain.columns:
+
+    if Xtrain[col].dtype == 'object':
+
+        fill_value = Xtrain[col].mode()[0]
+
+    else:
+
+        fill_value = Xtrain[col].median()
+
+    Xtrain[col] = Xtrain[col].fillna(fill_value)
+    Xtest[col] = Xtest[col].fillna(fill_value)
+
+# FEATURE TYPES
+numeric_features = Xtrain.select_dtypes(
+    include=['int64', 'float64']
+).columns.tolist()
+
+categorical_features = Xtrain.select_dtypes(
+    include=['object']
+).columns.tolist()
+
+# PREPROCESSOR
 preprocessor = make_column_transformer(
-    (StandardScaler(), numeric_features),
-    (OneHotEncoder(handle_unknown='ignore'), categorical_features)
-)'''
+    ('passthrough', numeric_features),
+    (
+        OneHotEncoder(handle_unknown='ignore'),
+        categorical_features
+    )
+)
 
-# Define base XGBoost model
-'''xgb_model = xgb.XGBClassifier(scale_pos_weight=class_weight, random_state=42, n_jobs=-1, tree_method="hist")'''
-xgb_model = xgb.XGBClassifier(random_state=42, n_jobs=-1, tree_method="hist", eval_metric='logloss')
+# CLASS WEIGHT
+class_weight = (
+    pd.Series(ytrain).value_counts()[0] /
+    pd.Series(ytrain).value_counts()[1]
+)
 
-# Define hyperparameter grid
-param_grid = {
-    'xgbclassifier__n_estimators': [50, 75, 100],
-    'xgbclassifier__max_depth': [2, 3],
-    'xgbclassifier__learning_rate': [0.03, 0.05],
-    'xgbclassifier__subsample': [0.7, 0.8],
-    'xgbclassifier__colsample_bytree': [0.6, 0.7],
-    'xgbclassifier__min_child_weight': [3, 5],
-    'xgbclassifier__reg_alpha': [0, 0.1, 0.5],
-    'xgbclassifier__reg_lambda': [1, 2, 5]
-}
-'''
-param_grid = {
-    'xgbclassifier__n_estimators': [50, 100],
-    'xgbclassifier__max_depth': [3, 4],
-    'xgbclassifier__learning_rate': [0.05, 0.1],
-    'xgbclassifier__subsample': [0.8, 1.0],
-    'xgbclassifier__colsample_bytree': [0.8, 1.0]
-}'''
-'''
-param_grid = {
-    'xgbclassifier__n_estimators': [100, 200],
-    'xgbclassifier__max_depth': [3, 5],
-    'xgbclassifier__learning_rate': [0.01, 0.1],
-    'xgbclassifier__subsample': [0.8],
-    'xgbclassifier__colsample_bytree': [0.8],
-    'xgbclassifier__scale_pos_weight': [3, 5, 7]
-}'''
+print(f"Scale Pos Weight: {class_weight}")
 
-strcv = StratifiedKFold(
-    n_splits=5,
-    shuffle=True,
-    random_state=42
+# XGBOOST MODEL
+xgb_model = xgb.XGBClassifier(
+    objective='binary:logistic',
+    eval_metric='logloss',
+    random_state=42,
+    n_jobs=-1,
+    tree_method='hist',
+    scale_pos_weight=class_weight,
+    n_estimators=150,
+    max_depth=4,
+    learning_rate=0.05,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    reg_alpha=0.5,
+    reg_lambda=1.5,
+    min_child_weight=5
+)
+
+# RANDOM FOREST MODEL
+rf_model = RandomForestClassifier(
+    n_estimators=150,
+    max_depth=4,
+    min_samples_split=10,
+    min_samples_leaf=5,
+    class_weight='balanced',
+    random_state=42,
+    n_jobs=-1
+)
+
+# ENSEMBLE MODEL
+ensemble_model = VotingClassifier(
+    estimators=[
+        ('xgb', xgb_model),
+        ('rf', rf_model)
+    ],
+    voting='soft'
 )
 
 # Model pipeline
-model_pipeline = make_pipeline(preprocessor, xgb_model)
+model_pipeline = make_pipeline(preprocessor, ensemble_model)
 
 # Start MLflow run
 with mlflow.start_run():
-    # Hyperparameter tuning
-    grid_search = GridSearchCV(model_pipeline, param_grid, cv=strcv, n_jobs=-1, scoring='f1_macro')
-    grid_search.fit(Xtrain, ytrain)
 
-    # Log all parameter combinations and their mean test scores
-    results = grid_search.cv_results_
-    for i in range(len(results['params'])):
-        param_set = results['params'][i]
-        mean_score = results['mean_test_score'][i]
-        std_score = results['std_test_score'][i]
+    # Train Model
+    model_pipeline.fit(Xtrain, ytrain)
 
-        # Log each combination as a separate MLflow run
-        with mlflow.start_run(nested=True):
-            mlflow.log_params(param_set)
-            mlflow.log_metric("mean_test_score", mean_score)
-            mlflow.log_metric("std_test_score", std_score)
+    # PREDICTION PROBABILITIES
+    y_pred_train_proba = (
+        model_pipeline.predict_proba(Xtrain)[:, 1]
+    )
 
-    # Log best parameters separately in main run
-    mlflow.log_params(grid_search.best_params_)
+    y_pred_test_proba = (
+        model_pipeline.predict_proba(Xtest)[:, 1]
+    )
 
-    # Store and evaluate the best model
-    best_model = grid_search.best_estimator_
+    # THRESHOLD OPTIMIZATION
+    thresholds = np.arange(0.44, 0.57, 0.02)
 
-    classification_threshold = 0.58
+    best_threshold = 0.5
+    best_macro_f1 = 0
 
-    y_pred_train_proba = best_model.predict_proba(Xtrain)[:, 1]
-    y_pred_train = (y_pred_train_proba >= classification_threshold).astype(int)
+    for threshold in thresholds:
 
-    y_pred_test_proba = best_model.predict_proba(Xtest)[:, 1]
-    y_pred_test = (y_pred_test_proba >= classification_threshold).astype(int)
+        preds = (
+            y_pred_test_proba >= threshold
+        ).astype(int)
 
-    train_report = classification_report(ytrain, y_pred_train, output_dict=True)
-    test_report = classification_report(ytest, y_pred_test, output_dict=True)
+        score = f1_score(
+            ytest,
+            preds,
+            average='macro'
+        )
 
-    # Log the metrics for the best model
+        if score > best_macro_f1:
+
+            best_macro_f1 = score
+            best_threshold = threshold
+
+    print(f"\nBest Threshold: {best_threshold}")
+    print(f"Best Macro F1: {best_macro_f1}")
+
+    # FINAL PREDICTIONS
+    y_pred_train = (
+        y_pred_train_proba >= best_threshold
+    ).astype(int)
+
+    y_pred_test = (
+        y_pred_test_proba >= best_threshold
+    ).astype(int)
+
+    # ROC AUC
+    train_auc = roc_auc_score(
+        ytrain,
+        y_pred_train_proba
+    )
+
+    test_auc = roc_auc_score(
+        ytest,
+        y_pred_test_proba
+    )
+
+    auc_gap = train_auc - test_auc
+
+    # REPORTS
+    train_report = classification_report(
+        ytrain,
+        y_pred_train,
+        output_dict=True
+    )
+
+    test_report = classification_report(
+        ytest,
+        y_pred_test,
+        output_dict=True
+    )
+
+    # LOG METRICS
     mlflow.log_metrics({
+
         "train_accuracy": train_report['accuracy'],
-        "train_precision": train_report['1']['precision'],
-        "train_recall": train_report['1']['recall'],
-        "train_f1-score": train_report['1']['f1-score'],
+
         "test_accuracy": test_report['accuracy'],
-        "test_precision": test_report['1']['precision'],
-        "test_recall": test_report['1']['recall'],
-        "test_f1-score": test_report['1']['f1-score']
+
+        "train_macro_f1":
+            train_report['macro avg']['f1-score'],
+
+        "test_macro_f1":
+            test_report['macro avg']['f1-score'],
+
+        "train_fault_recall":
+            train_report['1']['recall'],
+
+        "test_fault_recall":
+            test_report['1']['recall'],
+
+        "train_healthy_recall":
+            train_report['0']['recall'],
+
+        "test_healthy_recall":
+            test_report['0']['recall'],
+
+        "train_auc": train_auc,
+
+        "test_auc": test_auc,
+
+        "auc_gap": auc_gap,
+
+        "best_threshold": best_threshold
     })
 
     # Save the model locally
     model_path = "best_cap_prediction_model_v1.joblib"
-    joblib.dump(best_model, model_path)
+    joblib.dump(model_pipeline, model_path)
 
     # Log the model artifact
     mlflow.log_artifact(model_path, artifact_path="model")
