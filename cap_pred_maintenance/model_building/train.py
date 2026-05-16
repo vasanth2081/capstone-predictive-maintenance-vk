@@ -101,7 +101,7 @@ model_pipeline = make_pipeline(preprocessor, xgb_model)
 # Start MLflow run
 with mlflow.start_run():
     # Hyperparameter tuning
-    grid_search = GridSearchCV(model_pipeline, param_grid, cv=strcv, n_jobs=-1, scoring='recall')
+    grid_search = GridSearchCV(model_pipeline, param_grid, cv=strcv, n_jobs=-1, scoring='f1')
     grid_search.fit(Xtrain, ytrain)
 
     # Log all parameter combinations and their mean test scores
@@ -123,7 +123,7 @@ with mlflow.start_run():
     # Store and evaluate the best model
     best_model = grid_search.best_estimator_
 
-    classification_threshold = 0.4
+    classification_threshold = 0.6
 
     y_pred_train_proba = best_model.predict_proba(Xtrain)[:, 1]
     y_pred_train = (y_pred_train_proba >= classification_threshold).astype(int)
