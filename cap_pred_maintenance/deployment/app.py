@@ -142,10 +142,10 @@ if st.button("Predict Engine Condition"):
         )
 
 with st.expander("View Input Data"):
-st.write(input_data)
+  st.write(input_data)
 
-st.write("Data Types")
-st.write(input_data.dtypes)
+  st.write("Data Types")
+  st.write(input_data.dtypes)
 
-st.write("Prediction")
-st.write(prediction)
+  st.write("Prediction")
+  st.write(prediction)
