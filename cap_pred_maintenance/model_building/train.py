@@ -57,11 +57,13 @@ class_weight = ytrain.value_counts()[0] / ytrain.value_counts()[1]
 class_weight
 
 # Define the preprocessing steps
+preprocessor = 'passthrough'
+'''
 preprocessor = ColumnTransformer(
     transformers=[
         ('num', StandardScaler(), numeric_features)
     ]
-)
+)'''
 '''
 preprocessor = make_column_transformer(
     (StandardScaler(), numeric_features),
@@ -69,16 +71,28 @@ preprocessor = make_column_transformer(
 )'''
 
 # Define base XGBoost model
-xgb_model = xgb.XGBClassifier(scale_pos_weight=class_weight, random_state=42, n_jobs=-1, tree_method="hist")
+'''xgb_model = xgb.XGBClassifier(scale_pos_weight=class_weight, random_state=42, n_jobs=-1, tree_method="hist")'''
+xgb_model = xgb.XGBClassifier(random_state=42, n_jobs=-1, tree_method="hist", eval_metric='logloss')
 
 # Define hyperparameter grid
+param_grid = {
+    'xgbclassifier__n_estimators': [50, 75, 100],
+    'xgbclassifier__max_depth': [2, 3],
+    'xgbclassifier__learning_rate': [0.03, 0.05],
+    'xgbclassifier__subsample': [0.7, 0.8],
+    'xgbclassifier__colsample_bytree': [0.6, 0.7],
+    'xgbclassifier__min_child_weight': [3, 5],
+    'xgbclassifier__reg_alpha': [0, 0.1, 0.5],
+    'xgbclassifier__reg_lambda': [1, 2, 5]
+}
+'''
 param_grid = {
     'xgbclassifier__n_estimators': [50, 100],
     'xgbclassifier__max_depth': [3, 4],
     'xgbclassifier__learning_rate': [0.05, 0.1],
     'xgbclassifier__subsample': [0.8, 1.0],
     'xgbclassifier__colsample_bytree': [0.8, 1.0]
-}
+}'''
 '''
 param_grid = {
     'xgbclassifier__n_estimators': [100, 200],
@@ -101,7 +115,7 @@ model_pipeline = make_pipeline(preprocessor, xgb_model)
 # Start MLflow run
 with mlflow.start_run():
     # Hyperparameter tuning
-    grid_search = GridSearchCV(model_pipeline, param_grid, cv=strcv, n_jobs=-1, scoring='f1')
+    grid_search = GridSearchCV(model_pipeline, param_grid, cv=strcv, n_jobs=-1, scoring='f1_macro')
     grid_search.fit(Xtrain, ytrain)
 
     # Log all parameter combinations and their mean test scores
@@ -123,7 +137,7 @@ with mlflow.start_run():
     # Store and evaluate the best model
     best_model = grid_search.best_estimator_
 
-    classification_threshold = 0.6
+    classification_threshold = 0.58
 
     y_pred_train_proba = best_model.predict_proba(Xtrain)[:, 1]
     y_pred_train = (y_pred_train_proba >= classification_threshold).astype(int)

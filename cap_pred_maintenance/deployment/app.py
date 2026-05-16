@@ -56,19 +56,43 @@ def feature_engineering(input_data):
         (df['Lub oil pressure'] + 1e-5)
     )
 
-    df['pressure_stability'] = (
-        df['Lub oil pressure'] +
-        df['Coolant pressure']
+    df['temp_pressure_interaction'] = (
+        df['Coolant temp'] /
+        (df['Coolant pressure'] + 1e-5)
     )
 
-    df['thermal_stress'] = (
-        df['Engine rpm'] *
-        df['lub oil temp']
+    df['lub_efficiency'] = (
+        df['Lub oil pressure'] /
+        (df['Engine rpm'] + 1e-5)
     )
 
-    df['rpm_pressure_ratio'] = (
+    df['fuel_stress'] = (
+        df['Fuel pressure'] *
+        df['Engine rpm']
+    )
+
+    df['thermal_gradient'] = (
+        abs(df['lub oil temp'] - df['Coolant temp'])
+    )
+
+    df['pressure_efficiency'] = (
+        df['Fuel pressure'] /
+        (df['Coolant pressure'] + 1e-5)
+    )
+
+    df['thermal_load_ratio'] = (
+        df['Coolant temp'] /
+        (df['lub oil temp'] + 1e-5)
+    )
+
+    df['rpm_temp_ratio'] = (
         df['Engine rpm'] /
-        (df['Lub oil pressure'] + 1e-5)
+        (df['Coolant temp'] + 1e-5)
+    )
+
+    df['oil_cooling_efficiency'] = (
+        df['Lub oil pressure'] /
+        (df['lub oil temp'] + 1e-5)
     )
 
     return df
