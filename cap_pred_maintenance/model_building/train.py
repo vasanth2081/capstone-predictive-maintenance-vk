@@ -9,6 +9,11 @@ import xgboost as xgb
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, classification_report, recall_score
 
+from sklearn.ensemble import (
+    RandomForestClassifier,
+    VotingClassifier
+)
+
 # for model serialization
 import joblib
 
